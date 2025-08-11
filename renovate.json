@@ -1,0 +1,162 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:base",
+    ":semanticCommits",
+    ":semanticCommitTypeAll(chore)",
+    ":semanticCommitScope(deps)"
+  ],
+  "schedule": ["before 4am on monday"],
+  "timezone": "UTC",
+  "packageRules": [
+    {
+      "matchUpdateTypes": ["minor", "patch"],
+      "matchCurrentVersion": "!/^0/",
+      "automerge": true,
+      "automergeType": "pr",
+      "platformAutomerge": true
+    },
+    {
+      "matchUpdateTypes": ["patch"],
+      "matchCurrentVersion": "/^0/",
+      "automerge": true,
+      "automergeType": "pr",
+      "platformAutomerge": true
+    },
+    {
+      "matchPackageNames": ["golang.org/x/tools"],
+      "groupName": "golang tools"
+    },
+    {
+      "matchPackageNames": ["google.golang.org/grpc"],
+      "groupName": "grpc packages"
+    },
+    {
+      "matchPackageNames": ["google.golang.org/protobuf"],
+      "groupName": "protobuf packages"
+    },
+    {
+      "matchPackageNames": ["github.com/golangci/golangci-lint"],
+      "groupName": "linting tools"
+    },
+    {
+      "matchPackageNames": ["gopkg.in/yaml.v3"],
+      "groupName": "yaml packages"
+    },
+    {
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "reviewers": ["rshade"]
+    },
+    {
+      "matchDepTypes": ["devDependencies"],
+      "automerge": true,
+      "automergeType": "pr",
+      "platformAutomerge": true
+    }
+  ],
+  "assignees": ["rshade"],
+  "reviewers": ["rshade"],
+  "labels": ["dependencies"],
+  "commitMessageAction": "Update",
+  "commitMessageTopic": "{{depName}}",
+  "commitMessageExtra": "to {{newVersion}}",
+  "commitMessagePrefix": "chore(deps):",
+  "commitMessageSuffix": "",
+  "prHourlyLimit": 2,
+  "prConcurrentLimit": 10,
+  "rangeStrategy": "bump",
+  "bumpVersion": null,
+  "ignorePaths": [
+    "**/node_modules/**",
+    "**/bower_components/**",
+    "**/vendor/**",
+    "**/examples/**",
+    "**/docs/**",
+    "**/.git/**",
+    "**/scripts/**"
+  ],
+  "enabledManagers": [
+    "gomod",
+    "github-actions",
+    "dockerfile",
+    "docker-compose",
+    "regex"
+  ],
+  "gomod": {
+    "enabled": true,
+    "updateLockFiles": true,
+    "postUpdateOptions": ["gomodTidy", "gomodDownload"]
+  },
+  "github-actions": {
+    "enabled": true,
+    "fileMatch": ["^\\.github/workflows/.*\\.ya?ml$"]
+  },
+  "dockerfile": {
+    "enabled": true,
+    "fileMatch": ["^Dockerfile$", "^Dockerfile\\..*$"]
+  },
+  "docker-compose": {
+    "enabled": true,
+    "fileMatch": ["^docker-compose\\.ya?ml$", "^compose\\.ya?ml$"]
+  },
+  "regex": {
+    "enabled": true,
+    "fileMatch": ["^\\.golangci\\.yml$", "^Makefile$"]
+  },
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "automerge": true,
+    "automergeType": "pr",
+    "platformAutomerge": true,
+    "assignees": ["rshade"],
+    "reviewers": ["rshade"],
+    "labels": ["security", "dependencies"]
+  },
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 4am on sunday"],
+    "automerge": true,
+    "automergeType": "pr",
+    "platformAutomerge": true
+  },
+  "pin": {
+    "enabled": true,
+    "automerge": true,
+    "automergeType": "pr",
+    "platformAutomerge": true
+  },
+  "digest": {
+    "enabled": true,
+    "automerge": true,
+    "automergeType": "pr",
+    "platformAutomerge": true
+  },
+  "repositories": [
+    "local"
+  ],
+  "onboarding": true,
+  "requireConfig": false,
+  "configWarningReuseIssue": false,
+  "pruneStaleBranches": true,
+  "recreateClosed": true,
+  "rebaseWhen": "auto",
+  "rebaseLabel": "rebase",
+  "rebaseConflictedPrs": true,
+  "rebaseStalePrs": true,
+  "gitSubmodules": {
+    "enabled": true
+  },
+  "hostRules": [
+    {
+      "hostType": "github",
+      "token": "{{ secrets.GITHUB_TOKEN }}"
+    }
+  ],
+  "gitAuthor": "Renovate Bot <bot@renovateapp.com>",
+  "binarySource": "install",
+  "cacheDir": "/tmp/renovate/cache",
+  "logLevel": "info",
+  "logFile": "/tmp/renovate/renovate.log",
+  "logFileLevel": "debug"
+}

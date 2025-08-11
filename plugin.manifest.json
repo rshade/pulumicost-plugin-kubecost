@@ -1,0 +1,49 @@
+{
+  "name": "kubecost",
+  "version": "1.0.0",
+  "type": "costsource",
+  "description": "Kubecost plugin for Pulumicost - provides actual and projected cost for Kubernetes resources",
+  "executable": "pulumicost-kubecost",
+  "protocol": "grpc",
+  "supported_resources": [
+    "k8s-namespace",
+    "k8s-pod",
+    "k8s-controller",
+    "k8s-node"
+  ],
+  "configuration": {
+    "baseUrl": {
+      "type": "string",
+      "description": "Kubecost API base URL",
+      "required": true,
+      "env": "KUBECOST_BASE_URL"
+    },
+    "apiToken": {
+      "type": "string",
+      "description": "Kubecost API token for authentication",
+      "required": false,
+      "env": "KUBECOST_API_TOKEN"
+    },
+    "defaultWindow": {
+      "type": "string",
+      "description": "Default time window for queries (e.g., 30d)",
+      "required": false,
+      "default": "30d",
+      "env": "KUBECOST_DEFAULT_WINDOW"
+    },
+    "timeout": {
+      "type": "string",
+      "description": "Request timeout duration (e.g., 15s)",
+      "required": false,
+      "default": "15s",
+      "env": "KUBECOST_TIMEOUT"
+    },
+    "tlsSkipVerify": {
+      "type": "boolean",
+      "description": "Skip TLS certificate verification",
+      "required": false,
+      "default": false,
+      "env": "KUBECOST_TLS_SKIP_VERIFY"
+    }
+  }
+}

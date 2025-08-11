@@ -1,0 +1,5 @@
+baseUrl: https://kubecost.example.com
+apiToken: ""
+defaultWindow: 30d
+timeout: 15s
+tlsSkipVerify: false

@@ -144,9 +144,7 @@
   "rebaseLabel": "rebase",
   "rebaseConflictedPrs": true,
   "rebaseStalePrs": true,
-  "gitSubmodules": {
-    "enabled": true
-  },
+  "cloneSubmodules": true,
   "hostRules": [
     {
       "hostType": "github",
@@ -155,8 +153,5 @@
   ],
   "gitAuthor": "Renovate Bot <bot@renovateapp.com>",
   "binarySource": "install",
-  "cacheDir": "/tmp/renovate/cache",
-  "logLevel": "info",
-  "logFile": "/tmp/renovate/renovate.log",
-  "logFileLevel": "debug"
+  "cacheDir": "/tmp/renovate/cache"
 }

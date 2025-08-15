@@ -75,7 +75,7 @@ func (s *KubecostServer) GetActualCost(ctx context.Context, q *ActualCostQuery) 
 		}
 	}
 
-	resp, err := s.cli.Allocation(ctx, kubecost.AllocationQuery{
+	resp, err := s.cli.EnhancedAllocation(ctx, kubecost.AllocationQuery{
 		Window: window,
 		Filter: filter,
 	})
@@ -88,7 +88,7 @@ func (s *KubecostServer) GetActualCost(ctx context.Context, q *ActualCostQuery) 
 		// Map Kubecost point → ActualCostResult
 		start, _ := time.Parse(time.RFC3339, it.Start)
 		acr := &ActualCostResult{
-			Timestamp:   timestamppb(start),
+			Timestamp:   timestamppb.New(start),
 			Cost:        it.Cost,
 			UsageAmount: 0,  // Optional: populate from CPU/RAM hours if needed
 			UsageUnit:   "", // Optional
@@ -152,9 +152,3 @@ func windowFromTimes(start, end string) string {
 	return fmt.Sprintf("%s,%s", start, end)
 }
 
-func timestamppb(t time.Time) *timestamppb.Timestamp {
-	return &timestamppb.Timestamp{
-		Seconds: t.Unix(),
-		Nanos:   int32(t.Nanosecond()),
-	}
-}

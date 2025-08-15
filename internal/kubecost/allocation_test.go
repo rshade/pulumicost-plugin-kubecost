@@ -131,11 +131,12 @@ func TestBuildAllocationURL(t *testing.T) {
 		t.Error("Expected URL to contain window parameter")
 	}
 
-	if !contains(url, "filter=namespace:\"default\"+pod:\"test-pod\"") {
-		t.Error("Expected URL to contain filter parameters")
+	if !contains(url, "filter=namespace%3A%22default%22%2Bpod%3A%22test-pod%22") && 
+	   !contains(url, "filter=pod%3A%22test-pod%22%2Bnamespace%3A%22default%22") {
+		t.Errorf("Expected URL to contain filter parameters, got: %s", url)
 	}
 
-	if !contains(url, "aggregate=namespace,pod") {
+	if !contains(url, "aggregate=namespace%2Cpod") {
 		t.Error("Expected URL to contain aggregate parameters")
 	}
 }

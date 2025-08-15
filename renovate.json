@@ -132,26 +132,12 @@
     "automergeType": "pr",
     "platformAutomerge": true
   },
-  "repositories": [
-    "local"
-  ],
   "onboarding": true,
-  "requireConfig": false,
-  "configWarningReuseIssue": false,
   "pruneStaleBranches": true,
   "recreateClosed": true,
   "rebaseWhen": "auto",
   "rebaseLabel": "rebase",
   "rebaseConflictedPrs": true,
   "rebaseStalePrs": true,
-  "cloneSubmodules": true,
-  "hostRules": [
-    {
-      "hostType": "github",
-      "token": "{{ secrets.GITHUB_TOKEN }}"
-    }
-  ],
-  "gitAuthor": "Renovate Bot <bot@renovateapp.com>",
-  "binarySource": "install",
-  "cacheDir": "/tmp/renovate/cache"
+  "cloneSubmodules": true
 }

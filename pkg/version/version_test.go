@@ -1,4 +1,4 @@
-package version
+package version //nolint:testpackage // Package name intentionally matches implementation for simplicity
 
 import (
 	"strings"
@@ -63,14 +63,13 @@ func TestFullString(t *testing.T) {
 }
 
 func TestVersionVariables(t *testing.T) {
-	// Test that version variables are accessible
-	if Version == "" {
-		t.Error("Version variable should not be empty")
+	// Test that default version info can be retrieved
+	version, buildDate, gitCommit, gitBranch, gitState := defaultVersionInfo()
+	if version == "" {
+		t.Error("Version should not be empty")
 	}
-
-	// These might be "unknown" if not built with ldflags, which is fine
-	_ = BuildDate
-	_ = GitCommit
-	_ = GitBranch
-	_ = GitState
+	_ = buildDate
+	_ = gitCommit
+	_ = gitBranch
+	_ = gitState
 }

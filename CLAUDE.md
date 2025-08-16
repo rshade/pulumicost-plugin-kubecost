@@ -38,6 +38,13 @@ The plugin maps resource IDs to Kubecost filters:
 ### Cost Projections
 `GetProjectedCost` calculates a 30-day average from historical data and extrapolates monthly costs. This is a simple MVP approach that can be enhanced with more sophisticated forecasting.
 
+### Cost Prediction API
+The plugin supports IBM Kubecost Cost Prediction API for proactive cost forecasting:
+- **Endpoint**: `POST /model/prediction/speccost`
+- **Purpose**: Predict cost impact for Kubernetes workloads before deployment
+- **Supported Formats**: YAML and JSON workload specifications
+- **Parameters**: cluster ID, namespace, prediction window, usage data options
+
 ### Error Handling
 - HTTP client includes timeout support via context
 - TLS certificate verification can be disabled for development
@@ -62,6 +69,42 @@ The plugin depends on:
 1. Update the `Supports()` method in `kubecost_server.go`
 2. Add mapping logic in `GetActualCost()` for the new resource ID format
 3. Update `plugin.manifest.json` with the new resource type
+
+### Using Cost Prediction API
+The prediction API allows forecasting costs before deployment:
+
+```go
+// Configure prediction settings
+cfg := kubecost.Config{
+    BaseURL:          "https://kubecost.example.com",
+    APIToken:         "your-api-token",
+    ClusterID:        "production-cluster",
+    DefaultNamespace: "default",
+    PredictionWindow: "7d",
+}
+
+// Create prediction request
+req := kubecost.PredictionRequest{
+    ClusterID:        "production-cluster",
+    DefaultNamespace: "web-services",
+    Window:           "2d",
+    WorkloadSpec:     yamlDeploymentSpec,
+    NoUsage:          false, // Include historical usage data
+}
+
+// Get cost prediction
+resp, err := client.PredictSpecCost(ctx, req)
+// resp.CostBefore: "$42.50/month"
+// resp.CostAfter:  "$67.80/month"
+// resp.CostChange: "+$25.30/month"
+```
+
+### Environment Variables for Prediction
+```bash
+export KUBECOST_CLUSTER_ID="production-cluster"
+export KUBECOST_DEFAULT_NAMESPACE="default"
+export KUBECOST_PREDICTION_WINDOW="7d"
+```
 
 ### Debugging the gRPC Server
 The server includes reflection support, so you can use tools like `grpcurl`:

@@ -1,4 +1,4 @@
-package kubecost
+package kubecost //nolint:testpackage // Package name intentionally matches implementation for simplicity
 
 import (
 	"context"
@@ -27,27 +27,13 @@ func TestAllocationEntry(t *testing.T) {
 			Start: "2024-01-01T00:00:00Z",
 			End:   "2024-01-01T23:59:59Z",
 		},
-		Start:            "2024-01-01T00:00:00Z",
-		End:              "2024-01-01T23:59:59Z",
-		Minutes:          1440.0,
-		CPUCores:         2.0,
-		CPUCoreHours:     48.0,
 		CPUCost:          50.25,
-		CPUEfficiency:    0.85,
-		GPUCount:         1.0,
-		GPUHours:         24.0,
 		GPUCost:          100.50,
 		NetworkCost:      10.00,
 		LoadBalancerCost: 5.00,
 		PVCost:           25.00,
-		RAMBytes:         8589934592, // 8GB
-		RAMByteHours:     206158430208,
 		RAMCost:          30.15,
-		RAMEfficiency:    0.90,
-		SharedCost:       0.0,
-		ExternalCost:     0.0,
 		TotalCost:        220.90,
-		TotalEfficiency:  0.87,
 	}
 
 	if entry.Name != "test-allocation" {
@@ -72,16 +58,10 @@ func TestAllocationEntry(t *testing.T) {
 
 func TestAllocationProperties(t *testing.T) {
 	props := AllocationProperties{
-		Cluster:        "test-cluster",
-		Node:           "test-node",
-		Container:      "test-container",
-		Controller:     "test-controller",
-		ControllerKind: "Deployment",
-		Namespace:      "default",
-		Pod:            "test-pod",
-		Services:       []string{"service1", "service2"},
-		Labels:         map[string]string{"app": "test", "env": "prod"},
-		Annotations:    map[string]string{"version": "v1", "team": "platform"},
+		Cluster:     "test-cluster",
+		Services:    []string{"service1", "service2"},
+		Labels:      map[string]string{"app": "test", "env": "prod"},
+		Annotations: map[string]string{"version": "v1", "team": "platform"},
 	}
 
 	if props.Cluster != "test-cluster" {
@@ -131,8 +111,8 @@ func TestBuildAllocationURL(t *testing.T) {
 		t.Error("Expected URL to contain window parameter")
 	}
 
-	if !contains(url, "filter=namespace%3A%22default%22%2Bpod%3A%22test-pod%22") && 
-	   !contains(url, "filter=pod%3A%22test-pod%22%2Bnamespace%3A%22default%22") {
+	if !contains(url, "filter=namespace%3A%22default%22%2Bpod%3A%22test-pod%22") &&
+		!contains(url, "filter=pod%3A%22test-pod%22%2Bnamespace%3A%22default%22") {
 		t.Errorf("Expected URL to contain filter parameters, got: %s", url)
 	}
 
@@ -246,7 +226,7 @@ func TestGetDetailedAllocation(t *testing.T) {
 
 func TestGetDetailedAllocation_Error(t *testing.T) {
 	// Create test server that returns error
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(`{"error": "Bad request"}`))
 	}))
@@ -344,7 +324,7 @@ func TestParseDurationWindow(t *testing.T) {
 	}
 
 	// Test standard duration
-	start, end, err = ParseDurationWindow("24h")
+	start, endTime, err := ParseDurationWindow("24h")
 	if err != nil {
 		t.Fatalf("ParseDurationWindow failed: %v", err)
 	}
@@ -353,6 +333,7 @@ func TestParseDurationWindow(t *testing.T) {
 	if start.Sub(expectedStart) > time.Second {
 		t.Errorf("Expected start time around %v, got %v", expectedStart, start)
 	}
+	_ = endTime // Use the variable to avoid unused warning
 }
 
 func TestParseDurationWindow_Invalid(t *testing.T) {
@@ -369,7 +350,7 @@ func TestParseDurationWindow_Invalid(t *testing.T) {
 
 func TestEnhancedAllocation(t *testing.T) {
 	// Create test server
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{
@@ -426,7 +407,7 @@ func TestEnhancedAllocation(t *testing.T) {
 	}
 }
 
-// Helper function
+// Helper function to check if string contains substring.
 func contains(s, substr string) bool {
 	return len(s) >= len(substr) && (s == substr ||
 		(len(s) > len(substr) && (s[:len(substr)] == substr ||

@@ -22,12 +22,15 @@ func TestVersionFlags(t *testing.T) {
 	// Save original command line arguments
 	originalArgs := os.Args
 	defer func() {
-		os.Args = originalArgs
+		os.Args = originalArgs //nolint:reassign // Required for testing CLI behavior
+		//nolint:reassign // Required for testing CLI behavior
 		flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
 	}()
 
 	// Test -version flag
+	//nolint:reassign // Required for testing CLI behavior
 	os.Args = []string{"pulumicost-kubecost", "-version"}
+	//nolint:reassign // Required for testing CLI behavior
 	flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
 
 	// This would normally call os.Exit(0), so we can't easily test it
@@ -38,7 +41,9 @@ func TestVersionFlags(t *testing.T) {
 	}
 
 	// Test -version-full flag
+	//nolint:reassign // Required for testing CLI behavior
 	os.Args = []string{"pulumicost-kubecost", "-version-full"}
+	//nolint:reassign // Required for testing CLI behavior
 	flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
 
 	fullVersionStr := version.FullString()
@@ -67,7 +72,7 @@ func TestCubectx(t *testing.T) {
 
 func TestCubectxWithEnvironmentVariable(t *testing.T) {
 	// Set environment variable
-	os.Setenv("KUBECOST_TIMEOUT", "60s")
+	t.Setenv("KUBECOST_TIMEOUT", "60s")
 	defer os.Unsetenv("KUBECOST_TIMEOUT")
 
 	ctx := context.Background()
@@ -87,7 +92,7 @@ func TestCubectxWithEnvironmentVariable(t *testing.T) {
 
 func TestCubectxWithInvalidEnvironmentVariable(t *testing.T) {
 	// Set invalid environment variable
-	os.Setenv("KUBECOST_TIMEOUT", "invalid")
+	t.Setenv("KUBECOST_TIMEOUT", "invalid")
 	defer os.Unsetenv("KUBECOST_TIMEOUT")
 
 	ctx := context.Background()
@@ -107,7 +112,7 @@ func TestCubectxWithInvalidEnvironmentVariable(t *testing.T) {
 
 func TestCubectxWithEmptyEnvironmentVariable(t *testing.T) {
 	// Set empty environment variable
-	os.Setenv("KUBECOST_TIMEOUT", "")
+	t.Setenv("KUBECOST_TIMEOUT", "")
 	defer os.Unsetenv("KUBECOST_TIMEOUT")
 
 	ctx := context.Background()
@@ -127,7 +132,7 @@ func TestCubectxWithEmptyEnvironmentVariable(t *testing.T) {
 
 func TestCubectxWithZeroTimeout(t *testing.T) {
 	// Set zero timeout
-	os.Setenv("KUBECOST_TIMEOUT", "0s")
+	t.Setenv("KUBECOST_TIMEOUT", "0s")
 	defer os.Unsetenv("KUBECOST_TIMEOUT")
 
 	ctx := context.Background()
@@ -147,7 +152,7 @@ func TestCubectxWithZeroTimeout(t *testing.T) {
 
 func TestCubectxWithNegativeTimeout(t *testing.T) {
 	// Set negative timeout
-	os.Setenv("KUBECOST_TIMEOUT", "-10s")
+	t.Setenv("KUBECOST_TIMEOUT", "-10s")
 	defer os.Unsetenv("KUBECOST_TIMEOUT")
 
 	ctx := context.Background()
@@ -167,7 +172,7 @@ func TestCubectxWithNegativeTimeout(t *testing.T) {
 
 func TestCubectxWithComplexTimeout(t *testing.T) {
 	// Set complex timeout
-	os.Setenv("KUBECOST_TIMEOUT", "1h30m45s")
+	t.Setenv("KUBECOST_TIMEOUT", "1h30m45s")
 	defer os.Unsetenv("KUBECOST_TIMEOUT")
 
 	ctx := context.Background()
@@ -198,7 +203,7 @@ func TestContextCancellation(t *testing.T) {
 	}
 
 	// Wait for timeout to expire (use a short timeout for testing)
-	os.Setenv("KUBECOST_TIMEOUT", "1ms")
+	t.Setenv("KUBECOST_TIMEOUT", "1ms")
 	defer os.Unsetenv("KUBECOST_TIMEOUT")
 
 	ctx2 := context.Background()

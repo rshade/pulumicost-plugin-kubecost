@@ -1,4 +1,4 @@
-package kubecost
+package kubecost //nolint:testpackage // Package name intentionally matches implementation for simplicity
 
 import (
 	"os"
@@ -38,11 +38,11 @@ func TestConfig(t *testing.T) {
 
 func TestLoadConfigFromEnvOrFile_EnvironmentOnly(t *testing.T) {
 	// Set environment variables
-	os.Setenv("KUBECOST_BASE_URL", "http://env-test:9090")
-	os.Setenv("KUBECOST_API_TOKEN", "env-token")
-	os.Setenv("KUBECOST_DEFAULT_WINDOW", "7d")
-	os.Setenv("KUBECOST_TIMEOUT", "60s")
-	os.Setenv("KUBECOST_TLS_SKIP_VERIFY", "true")
+	t.Setenv("KUBECOST_BASE_URL", "http://env-test:9090")
+	t.Setenv("KUBECOST_API_TOKEN", "env-token")
+	t.Setenv("KUBECOST_DEFAULT_WINDOW", "7d")
+	t.Setenv("KUBECOST_TIMEOUT", "60s")
+	t.Setenv("KUBECOST_TLS_SKIP_VERIFY", "true")
 	defer func() {
 		os.Unsetenv("KUBECOST_BASE_URL")
 		os.Unsetenv("KUBECOST_API_TOKEN")
@@ -86,20 +86,20 @@ defaultWindow: 14d
 timeout: 45s
 tlsSkipVerify: false
 `
-	tmpFile, err := os.CreateTemp("", "kubecost-config-*.yaml")
+	tmpFile, err := os.CreateTemp(t.TempDir(), "kubecost-config-*.yaml")
 	if err != nil {
 		t.Fatalf("Failed to create temp file: %v", err)
 	}
 	defer os.Remove(tmpFile.Name())
 
-	if _, err := tmpFile.WriteString(configContent); err != nil {
-		t.Fatalf("Failed to write config content: %v", err)
+	if _, writeErr := tmpFile.WriteString(configContent); writeErr != nil {
+		t.Fatalf("Failed to write config content: %v", writeErr)
 	}
 	tmpFile.Close()
 
 	// Set environment variables (should be overridden by file)
-	os.Setenv("KUBECOST_BASE_URL", "http://env-test:9090")
-	os.Setenv("KUBECOST_API_TOKEN", "env-token")
+	t.Setenv("KUBECOST_BASE_URL", "http://env-test:9090")
+	t.Setenv("KUBECOST_API_TOKEN", "env-token")
 	defer func() {
 		os.Unsetenv("KUBECOST_BASE_URL")
 		os.Unsetenv("KUBECOST_API_TOKEN")
@@ -169,7 +169,7 @@ func TestLoadConfigFromEnvOrFile_FileNotFound(t *testing.T) {
 
 func TestGetenvDefault(t *testing.T) {
 	// Test with environment variable set
-	os.Setenv("TEST_VAR", "test-value")
+	t.Setenv("TEST_VAR", "test-value")
 	defer os.Unsetenv("TEST_VAR")
 
 	result := getenvDefault("TEST_VAR", "default-value")
@@ -184,7 +184,7 @@ func TestGetenvDefault(t *testing.T) {
 	}
 
 	// Test with empty environment variable
-	os.Setenv("EMPTY_VAR", "")
+	t.Setenv("EMPTY_VAR", "")
 	result = getenvDefault("EMPTY_VAR", "default-value")
 	if result != "default-value" {
 		t.Errorf("Expected %s, got %s", "default-value", result)
@@ -193,7 +193,7 @@ func TestGetenvDefault(t *testing.T) {
 
 func TestGetenvDuration(t *testing.T) {
 	// Test with valid duration
-	os.Setenv("TEST_DURATION", "30s")
+	t.Setenv("TEST_DURATION", "30s")
 	defer os.Unsetenv("TEST_DURATION")
 
 	result := getenvDuration("TEST_DURATION", 15*time.Second)
@@ -202,7 +202,7 @@ func TestGetenvDuration(t *testing.T) {
 	}
 
 	// Test with invalid duration
-	os.Setenv("INVALID_DURATION", "invalid")
+	t.Setenv("INVALID_DURATION", "invalid")
 	result = getenvDuration("INVALID_DURATION", 15*time.Second)
 	if result != 15*time.Second {
 		t.Errorf("Expected %v, got %v", 15*time.Second, result)
@@ -215,7 +215,7 @@ func TestGetenvDuration(t *testing.T) {
 	}
 
 	// Test with complex duration
-	os.Setenv("COMPLEX_DURATION", "1h30m")
+	t.Setenv("COMPLEX_DURATION", "1h30m")
 	result = getenvDuration("COMPLEX_DURATION", 15*time.Second)
 	expected := 1*time.Hour + 30*time.Minute
 	if result != expected {

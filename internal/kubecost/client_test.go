@@ -1,4 +1,4 @@
-package kubecost
+package kubecost //nolint:testpackage // Package name intentionally matches implementation for simplicity
 
 import (
 	"context"
@@ -58,8 +58,6 @@ func TestAllocationQuery(t *testing.T) {
 
 func TestAllocationPoint(t *testing.T) {
 	point := AllocationPoint{
-		Start:       "2024-01-01T00:00:00Z",
-		End:         "2024-01-01T23:59:59Z",
 		Cost:        100.50,
 		CPUCost:     50.25,
 		RAMCost:     30.15,
@@ -147,7 +145,7 @@ func TestClientAllocation(t *testing.T) {
 
 func TestClientAllocationError(t *testing.T) {
 	// Create a test server that returns an error
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(`{"error": "Internal server error"}`))
 	}))

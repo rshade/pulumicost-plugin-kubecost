@@ -42,8 +42,10 @@ type AllocationResponse struct {
 }
 
 func (c *Client) Allocation(ctx context.Context, q AllocationQuery) (AllocationResponse, error) {
-	url := fmt.Sprintf("%s/model/allocation?window=%s", c.cfg.BaseURL, q.Window)
-	// TODO: add filters & aggregate params to URL
+	url, err := c.BuildAllocationURL(q)
+	if err != nil {
+		return AllocationResponse{}, err
+	}
 	req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if c.cfg.APIToken != "" {
 		req.Header.Set("Authorization", "Bearer "+c.cfg.APIToken)

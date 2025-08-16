@@ -1,6 +1,7 @@
 package kubecost
 
 import (
+	"errors"
 	"os"
 	"time"
 
@@ -26,9 +27,13 @@ func LoadConfigFromEnvOrFile(path string) (Config, error) {
 	if path != "" {
 		b, err := os.ReadFile(path)
 		if err != nil {
-			return cfg, err
+			// If file doesn't exist, just use environment/default values
+			if !errors.Is(err, os.ErrNotExist) {
+				return cfg, err
+			}
+		} else {
+			_ = yaml.Unmarshal(b, &cfg)
 		}
-		_ = yaml.Unmarshal(b, &cfg)
 	}
 	return cfg, nil
 }

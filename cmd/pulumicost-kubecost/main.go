@@ -55,7 +55,7 @@ func main() {
 	}
 
 	grpcServer := grpc.NewServer(grpc.Creds(insecure.NewCredentials()))
-	kubecostServer := server.NewKubecostServer(cli)
+	_ = server.NewKubecostServer(cli)
 	// TODO: Uncomment when pulumicost-spec protobuf definitions are available
 	// kubecostServer.RegisterService(grpcServer)
 

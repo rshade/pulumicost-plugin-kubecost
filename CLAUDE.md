@@ -75,3 +75,127 @@ The HTTP client in `client.go` handles the Kubecost API interaction. To add new 
 1. Add new methods to the Client struct
 2. Define request/response types
 3. Handle the API call with proper error handling and timeout
+
+## Go-Specific Development Patterns
+
+### Struct Field Consistency
+- **Critical**: Field names must be consistent across related structs
+- Example issue: `PVCost` vs `PVCCost` caused compilation failures
+- Always verify field names when copying/adapting struct definitions
+
+### URL Parameter Handling
+- Map iteration order is random in Go, affecting URL parameter order
+- Use flexible testing patterns that accept multiple valid orders:
+  ```go
+  if !contains(url, "order1") && !contains(url, "order2") {
+      t.Errorf("Expected URL to contain parameters in either order")
+  }
+  ```
+
+### Error Handling Best Practices
+- Use `errors.Is(err, os.ErrNotExist)` for file existence checks
+- Graceful degradation: missing config files should not fail hard
+- Always check for unused variables in strict builds (`_ = variable`)
+
+### Protobuf and Timestamp Handling
+- Use `timestamppb.New(time)` instead of manual timestamp construction
+- Avoid duplicate helper functions when standard library provides them
+
+## Project-Specific Architecture Insights
+
+### Allocation API Methods
+The project has two allocation methods with different capabilities:
+- **Basic `Allocation`**: Simple method, was incomplete (fixed in recent update)
+- **Enhanced `EnhancedAllocation`**: Full-featured method using `GetDetailedAllocation` + `ConvertToSimpleResponse`
+- **Recommendation**: Use `EnhancedAllocation` for new implementations
+
+### Testing Architecture
+- Uses mock HTTP servers (`httptest.NewServer`) for integration testing
+- Mock protobuf types defined locally due to missing `pulumicost-spec` dependency
+- Integration tests validate end-to-end functionality including URL building and response parsing
+
+### Configuration Handling
+- Supports both environment variables and YAML files
+- Environment variables take precedence
+- Config loading gracefully handles missing files with `os.ErrNotExist`
+
+## Common Development Issues & Solutions
+
+### Dependency Management
+- Issue: Missing `go.sum` entries cause build failures
+- Solution: Run `go mod tidy` when adding new imports or after git operations
+- Symptom: "missing go.sum entry for module" errors
+
+### Linting Configuration
+- Issue: `embeddedstructfieldcheck` linter requires golangci-lint v2.3+
+- Solution: Disable incompatible linters in `.golangci.yml` for older versions
+- Check version compatibility before enabling new linters
+
+### URL Building and Testing
+- Issue: Go's map iteration randomness affects URL parameter order
+- Solution: Test for multiple valid parameter orders or use URL parsing
+- Debug tip: Create temporary debug files to inspect generated URLs
+
+### Parallel Process Conflicts
+- Issue: "parallel golangci-lint is running" errors
+- Solution: Wait between runs or use direct `golangci-lint run` command
+- Alternative: Use `--timeout` flag to prevent hanging processes
+
+## Testing Strategies
+
+### Integration Testing with Mock Servers
+```go
+// Effective pattern for testing HTTP API clients
+mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+    // Validate request parameters
+    // Return mock response
+}))
+defer mockServer.Close()
+
+// Point client to mock server
+client := NewClient(Config{BaseURL: mockServer.URL})
+```
+
+### URL Parameter Testing
+- Test both parameter presence and proper encoding
+- Account for random map iteration order in Go
+- Use helper functions to reduce test code duplication
+
+### Error Scenario Testing
+- Test missing configuration files
+- Test network timeouts and failures  
+- Test malformed API responses
+- Test invalid parameter combinations
+
+## Tool Usage and Workflow Optimizations
+
+### Go Testing Commands
+```bash
+# Test specific package with verbose output
+go test ./internal/kubecost -v
+
+# Test specific function
+go test ./internal/kubecost -v -run TestFunctionName
+
+# Test with race detection
+go test -race ./...
+```
+
+### Debugging Techniques
+- Create temporary debug files for URL inspection
+- Use `fmt.Printf` debugging in tests (remove before commit)
+- Check HTTP request/response details in mock server handlers
+
+### Build and Validation Workflow
+```bash
+# Complete validation sequence
+go mod tidy
+make build
+make test
+make lint
+```
+
+### golangci-lint Best Practices
+- Check version compatibility before updating config
+- Use `--timeout=60s` flag for slow systems
+- Disable strict linters during development, enable for production

@@ -2,6 +2,9 @@ package server
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -94,14 +97,19 @@ func TestServerName(t *testing.T) {
 	mockClient := &kubecost.Client{}
 	server := NewKubecostServer(mockClient)
 
-	ctx := context.Background()
-	req := &MockEmpty{}
+	_ = context.Background()
+	_ = &MockEmpty{}
 
 	// Since we can't directly test the gRPC method due to protobuf dependencies,
 	// we'll test the logic that would be in the Name method
 	expectedName := "kubecost"
 	if expectedName != "kubecost" {
 		t.Errorf("Expected name %s, got %s", "kubecost", expectedName)
+	}
+	
+	// Use server to avoid unused variable
+	if server == nil {
+		t.Error("Server should not be nil")
 	}
 }
 
@@ -118,7 +126,7 @@ func TestServerSupports(t *testing.T) {
 	}
 
 	for _, resourceType := range supportedTypes {
-		req := &MockResourceDescriptor{
+		_ = &MockResourceDescriptor{
 			ResourceType: resourceType,
 		}
 
@@ -131,6 +139,11 @@ func TestServerSupports(t *testing.T) {
 		if !supported {
 			t.Errorf("Expected %s to be supported", resourceType)
 		}
+	}
+	
+	// Use server to avoid unused variable
+	if server == nil {
+		t.Error("Server should not be nil")
 	}
 
 	// Test unsupported resource type
@@ -204,27 +217,24 @@ func TestResourceIdParsing(t *testing.T) {
 
 func TestWindowFromTimes(t *testing.T) {
 	// Test with valid timestamps
-	start := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
-	end := time.Date(2024, 1, 31, 23, 59, 59, 0, time.UTC)
+	start := "2024-01-01T00:00:00Z"
+	end := "2024-01-31T23:59:59Z"
 
-	startTS := timestamppb.New(start)
-	endTS := timestamppb.New(end)
-
-	window := windowFromTimes(startTS, endTS)
+	window := windowFromTimes(start, end)
 	expected := "2024-01-01T00:00:00Z,2024-01-31T23:59:59Z"
 
 	if window != expected {
 		t.Errorf("Expected window %s, got %s", expected, window)
 	}
 
-	// Test with nil timestamps
-	window = windowFromTimes(nil, nil)
+	// Test with empty timestamps
+	window = windowFromTimes("", "")
 	if window != "30d" {
 		t.Errorf("Expected default window 30d, got %s", window)
 	}
 
-	// Test with one nil timestamp
-	window = windowFromTimes(startTS, nil)
+	// Test with one empty timestamp
+	window = windowFromTimes(start, "")
 	if window != "30d" {
 		t.Errorf("Expected default window 30d, got %s", window)
 	}
@@ -232,7 +242,7 @@ func TestWindowFromTimes(t *testing.T) {
 
 func TestTimestamppb(t *testing.T) {
 	now := time.Now().UTC()
-	ts := timestamppb(now)
+	ts := timestamppb.New(now)
 
 	if ts.Seconds != now.Unix() {
 		t.Errorf("Expected seconds %d, got %d", now.Unix(), ts.Seconds)
@@ -355,7 +365,6 @@ func TestMockPricingSpec(t *testing.T) {
 // Helper function to parse resource ID (mocking the logic from the server)
 func parseResourceId(resourceId string) map[string]string {
 	filter := map[string]string{}
-	parts := []string{}
 
 	// Mock the strings.Split logic
 	if resourceId != "" {
@@ -374,4 +383,121 @@ func parseResourceId(resourceId string) map[string]string {
 	}
 
 	return filter
+}
+
+// Integration test for GetActualCost with date range using mock HTTP server
+func TestGetActualCostWithDateRange(t *testing.T) {
+	// Create a mock HTTP server that simulates Kubecost API
+	mockServer := createMockKubecostServer(t)
+	defer mockServer.Close()
+
+	// Create Kubecost client pointing to mock server
+	cfg := kubecost.Config{
+		BaseURL: mockServer.URL,
+		Timeout: 30 * time.Second,
+	}
+	
+	client, err := kubecost.NewClient(context.Background(), cfg)
+	if err != nil {
+		t.Fatalf("Failed to create client: %v", err)
+	}
+
+	// Create server with the client
+	server := NewKubecostServer(client)
+
+	// Create test query with date range
+	startTime := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	endTime := time.Date(2024, 1, 31, 23, 59, 59, 0, time.UTC)
+	
+	query := &ActualCostQuery{
+		ResourceId: "namespace/default",
+		Start:      startTime.Format(time.RFC3339),
+		End:        endTime.Format(time.RFC3339),
+	}
+
+	// Call GetActualCost
+	result, err := server.GetActualCost(context.Background(), query)
+	if err != nil {
+		t.Fatalf("GetActualCost failed: %v", err)
+	}
+
+	// Verify results
+	if result == nil {
+		t.Fatal("Result should not be nil")
+	}
+
+	if len(result.Results) == 0 {
+		t.Error("Expected at least one cost result")
+	}
+
+	// Verify the first result
+	if len(result.Results) > 0 {
+		firstResult := result.Results[0]
+		
+		if firstResult.Cost <= 0 {
+			t.Errorf("Expected positive cost, got %f", firstResult.Cost)
+		}
+		
+		if firstResult.Source != "kubecost" {
+			t.Errorf("Expected source 'kubecost', got %s", firstResult.Source)
+		}
+		
+		if firstResult.Timestamp == nil {
+			t.Error("Expected timestamp to be set")
+		}
+	}
+}
+
+func createMockKubecostServer(t *testing.T) *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Verify we're calling the allocation endpoint
+		if r.URL.Path != "/model/allocation" {
+			t.Errorf("Expected path /model/allocation, got %s", r.URL.Path)
+		}
+
+		// Verify we have the window parameter
+		window := r.URL.Query().Get("window")
+		if window == "" {
+			t.Error("Expected window parameter")
+		}
+
+		// Verify we have filter parameters
+		filter := r.URL.Query().Get("filter")
+		if !strings.Contains(filter, "namespace") {
+			t.Error("Expected namespace filter")
+		}
+
+		// Return mock Kubecost response
+		response := `{
+			"code": 200,
+			"status": "success",
+			"data": [
+				{
+					"default": {
+						"name": "default",
+						"properties": {
+							"cluster": "test-cluster",
+							"namespace": "default"
+						},
+						"window": {
+							"start": "2024-01-01T00:00:00Z",
+							"end": "2024-01-01T23:59:59Z"
+						},
+						"start": "2024-01-01T00:00:00Z",
+						"end": "2024-01-01T23:59:59Z",
+						"totalCost": 125.75,
+						"cpuCost": 75.25,
+						"ramCost": 35.50,
+						"gpuCost": 10.00,
+						"pvCost": 5.00,
+						"networkCost": 0.00
+					}
+				}
+			]
+		}`
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(response))
+	}))
 }

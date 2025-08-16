@@ -64,7 +64,7 @@ func TestAllocationPoint(t *testing.T) {
 		CPUCost:     50.25,
 		RAMCost:     30.15,
 		GPUCost:     10.10,
-		PVCost:      5.00,
+		PVCCost:     5.00,
 		NetworkCost: 5.00,
 	}
 
@@ -72,7 +72,7 @@ func TestAllocationPoint(t *testing.T) {
 		t.Errorf("Expected cost 100.50, got %f", point.Cost)
 	}
 
-	if point.CPUCost+point.RAMCost+point.GPUCost+point.PVCost+point.NetworkCost != point.Cost {
+	if point.CPUCost+point.RAMCost+point.GPUCost+point.PVCCost+point.NetworkCost != point.Cost {
 		t.Error("Sum of individual costs should equal total cost")
 	}
 }

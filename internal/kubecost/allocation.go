@@ -178,7 +178,7 @@ func ConvertToSimpleResponse(detailed *DetailedAllocationResponse) AllocationRes
 				CPUCost:     entry.CPUCost,
 				RAMCost:     entry.RAMCost,
 				GPUCost:     entry.GPUCost,
-				PVCost:      entry.PVCost,
+				PVCCost:     entry.PVCost,
 				NetworkCost: entry.NetworkCost,
 			})
 		}

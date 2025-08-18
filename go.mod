@@ -1,6 +1,6 @@
 module github.com/rshade/pulumicost-plugin-kubecost
 
-go 1.23
+go 1.25.0
 
 require (
 	google.golang.org/grpc v1.69.4

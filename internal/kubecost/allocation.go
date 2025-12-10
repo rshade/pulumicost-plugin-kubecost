@@ -12,7 +12,12 @@ import (
 	"time"
 )
 
-// DetailedAllocationResponse represents the full response from Kubecost allocation API
+const (
+	httpClientErrorStatus = 400
+	httpSuccessStatus     = 200
+)
+
+// DetailedAllocationResponse represents the full response from Kubecost allocation API.
 type DetailedAllocationResponse struct {
 	Code    int                          `json:"code"`
 	Status  string                       `json:"status"`
@@ -20,7 +25,7 @@ type DetailedAllocationResponse struct {
 	Data    []map[string]AllocationEntry `json:"data"`
 }
 
-// AllocationEntry represents a single allocation entry from Kubecost
+// AllocationEntry represents a single allocation entry from Kubecost.
 type AllocationEntry struct {
 	Name              string                 `json:"name"`
 	Properties        AllocationProperties   `json:"properties"`
@@ -49,27 +54,27 @@ type AllocationEntry struct {
 	RawAllocationOnly map[string]interface{} `json:"rawAllocationOnly,omitempty"`
 }
 
-// AllocationProperties contains metadata about the allocation
+// AllocationProperties contains metadata about the allocation.
 type AllocationProperties struct {
-	Cluster      string            `json:"cluster,omitempty"`
-	Node         string            `json:"node,omitempty"`
-	Container    string            `json:"container,omitempty"`
-	Controller   string            `json:"controller,omitempty"`
-	ControllerKind string          `json:"controllerKind,omitempty"`
-	Namespace    string            `json:"namespace,omitempty"`
-	Pod          string            `json:"pod,omitempty"`
-	Services     []string          `json:"services,omitempty"`
-	Labels       map[string]string `json:"labels,omitempty"`
-	Annotations  map[string]string `json:"annotations,omitempty"`
+	Cluster        string            `json:"cluster,omitempty"`
+	Node           string            `json:"node,omitempty"`
+	Container      string            `json:"container,omitempty"`
+	Controller     string            `json:"controller,omitempty"`
+	ControllerKind string            `json:"controllerKind,omitempty"`
+	Namespace      string            `json:"namespace,omitempty"`
+	Pod            string            `json:"pod,omitempty"`
+	Services       []string          `json:"services,omitempty"`
+	Labels         map[string]string `json:"labels,omitempty"`
+	Annotations    map[string]string `json:"annotations,omitempty"`
 }
 
-// AllocationWindow represents the time window for the allocation
+// AllocationWindow represents the time window for the allocation.
 type AllocationWindow struct {
 	Start string `json:"start"`
 	End   string `json:"end"`
 }
 
-// BuildAllocationURL constructs the URL for the Kubecost allocation API
+// BuildAllocationURL constructs the URL for the Kubecost allocation API.
 func (c *Client) BuildAllocationURL(q AllocationQuery) (string, error) {
 	u, err := url.Parse(c.cfg.BaseURL)
 	if err != nil {
@@ -103,14 +108,14 @@ func (c *Client) BuildAllocationURL(q AllocationQuery) (string, error) {
 	return u.String(), nil
 }
 
-// GetDetailedAllocation retrieves detailed allocation data from Kubecost
+// GetDetailedAllocation retrieves detailed allocation data from Kubecost.
 func (c *Client) GetDetailedAllocation(ctx context.Context, q AllocationQuery) (*DetailedAllocationResponse, error) {
 	url, err := c.BuildAllocationURL(q)
 	if err != nil {
 		return nil, err
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("creating request: %w", err)
 	}
@@ -126,7 +131,7 @@ func (c *Client) GetDetailedAllocation(ctx context.Context, q AllocationQuery) (
 			Timeout: c.cfg.Timeout,
 			Transport: &http.Transport{
 				TLSClientConfig: &tls.Config{
-					InsecureSkipVerify: c.cfg.TLSSkipVerify,
+					InsecureSkipVerify: c.cfg.TLSSkipVerify, //nolint:gosec // Configurable for dev environments
 				},
 			},
 		}
@@ -138,24 +143,24 @@ func (c *Client) GetDetailedAllocation(ctx context.Context, q AllocationQuery) (
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode >= 400 {
+	if resp.StatusCode >= httpClientErrorStatus {
 		body, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("kubecost API error: status=%d, body=%s", resp.StatusCode, string(body))
 	}
 
 	var result DetailedAllocationResponse
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("decoding response: %w", err)
+	if decodeErr := json.NewDecoder(resp.Body).Decode(&result); decodeErr != nil {
+		return nil, fmt.Errorf("decoding response: %w", decodeErr)
 	}
 
-	if result.Code != 200 {
+	if result.Code != httpSuccessStatus {
 		return nil, fmt.Errorf("kubecost API returned error code %d: %s", result.Code, result.Message)
 	}
 
 	return &result, nil
 }
 
-// ConvertToSimpleResponse converts detailed allocation to the simple response format
+// ConvertToSimpleResponse converts detailed allocation to the simple response format.
 func ConvertToSimpleResponse(detailed *DetailedAllocationResponse) AllocationResponse {
 	var items []AllocationPoint
 
@@ -187,7 +192,7 @@ func ConvertToSimpleResponse(detailed *DetailedAllocationResponse) AllocationRes
 	return AllocationResponse{Items: items}
 }
 
-// Enhanced Allocation method that uses detailed allocation API
+// EnhancedAllocation method that uses detailed allocation API to retrieve allocation data.
 func (c *Client) EnhancedAllocation(ctx context.Context, q AllocationQuery) (AllocationResponse, error) {
 	detailed, err := c.GetDetailedAllocation(ctx, q)
 	if err != nil {
@@ -197,16 +202,16 @@ func (c *Client) EnhancedAllocation(ctx context.Context, q AllocationQuery) (All
 	return ConvertToSimpleResponse(detailed), nil
 }
 
-// Helper function to format time window for Kubecost API
+// FormatTimeWindow formats time window for Kubecost API.
 func FormatTimeWindow(start, end time.Time) string {
 	// Kubecost accepts various formats, RFC3339 is most reliable
 	return fmt.Sprintf("%s,%s", start.Format(time.RFC3339), end.Format(time.RFC3339))
 }
 
-// Helper function to parse duration window (e.g., "30d", "7d", "24h")
+// ParseDurationWindow parses duration window (e.g., "30d", "7d", "24h").
 func ParseDurationWindow(window string) (time.Time, time.Time, error) {
 	now := time.Now().UTC()
-	
+
 	// Parse duration strings like "30d", "7d", "24h"
 	if strings.HasSuffix(window, "d") {
 		days := strings.TrimSuffix(window, "d")

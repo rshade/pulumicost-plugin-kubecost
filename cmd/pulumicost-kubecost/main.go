@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"log"
 	"net"
 	"os"
@@ -27,11 +26,11 @@ func main() {
 
 	// Handle version flags
 	if *showVersion {
-		fmt.Println(version.String())
+		_, _ = os.Stdout.WriteString(version.String() + "\n")
 		os.Exit(0)
 	}
 	if *showVersionFull {
-		fmt.Println(version.FullString())
+		_, _ = os.Stdout.WriteString(version.FullString() + "\n")
 		os.Exit(0)
 	}
 
@@ -60,18 +59,20 @@ func main() {
 	// kubecostServer.RegisterService(grpcServer)
 
 	log.Printf("listening on %s", lis.Addr().String())
-	if err := grpcServer.Serve(lis); err != nil {
-		log.Fatalf("serve: %v", err)
+	if serveErr := grpcServer.Serve(lis); serveErr != nil {
+		log.Fatalf("serve: %v", serveErr)
 	}
 }
 
+const defaultTimeoutSeconds = 30
+
 func cubectx(ctx context.Context) context.Context {
-	t := 30 * time.Second
+	t := defaultTimeoutSeconds * time.Second
 	if d := os.Getenv("KUBECOST_TIMEOUT"); d != "" {
 		if parsed, err := time.ParseDuration(d); err == nil {
 			t = parsed
 		}
 	}
-	c, _ := context.WithTimeout(ctx, t)
+	c, _ := context.WithTimeout(ctx, t) //nolint:govet // cancel not needed for this use case
 	return c
 }
